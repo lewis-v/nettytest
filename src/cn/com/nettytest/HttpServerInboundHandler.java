@@ -69,7 +69,7 @@ public class HttpServerInboundHandler extends ChannelInboundHandlerAdapter {
 					Attribute data = (Attribute) parm;
 					parmMap.put(data.getName(), data.getValue());
 					Log = Log + data.getName()+":"+data.getValue()+"\n";
-				}else if(parm instanceof MixedFileUpload) {
+				}else if(parm instanceof MixedFileUpload) { 
 					MixedFileUpload upload = (MixedFileUpload)parm;
 					parmMapFile.put(upload.getName(), upload.getFile());
 					Log = Log + upload.getName()+":"+upload.getFile()+"\n";
