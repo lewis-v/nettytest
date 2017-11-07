@@ -7,7 +7,12 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;  
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.List;
@@ -31,6 +36,8 @@ import io.netty.handler.codec.http.multipart.Attribute;
 import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.netty.handler.codec.http.multipart.MixedFileUpload;
+import net.sf.json.JSONObject;
+import utils.FileUtils;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseDecoder;
 import io.netty.handler.codec.http.FullHttpMessage;
@@ -72,11 +79,27 @@ public class HttpServerInboundHandler extends ChannelInboundHandlerAdapter {
 				}else if(parm instanceof MixedFileUpload) { 
 					MixedFileUpload upload = (MixedFileUpload)parm;
 					parmMapFile.put(upload.getName(), upload.getFile());
+					File file = new File("UP"+System.currentTimeMillis()+upload.getFilename().substring(upload.getFilename().lastIndexOf(".")));
+					FileUtils.copyFile(upload.getFile(), file);
+//					BufferedReader reader = new BufferedReader(new FileReader(upload.getFile()));
+//					BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+//					String content = "";
+//					while((content = reader.readLine())!=null) {
+//						writer.write(content);
+//						writer.flush();
+//					}
+//					reader.close();
+//					writer.close();
+					Log = Log + file.getAbsolutePath()+"\n";
+				} else {
+					MixedFileUpload upload = (MixedFileUpload)parm;
+					parmMapFile.put(upload.getName(), upload.getFile());
 					Log = Log + upload.getName()+":"+upload.getFile()+"\n";
 				}
+				
 			}
 
-		} 
+		}
 
 		//∑µªÿ–≈œ¢
 		HttpContent content = (HttpContent) msg;  
@@ -85,9 +108,12 @@ public class HttpServerInboundHandler extends ChannelInboundHandlerAdapter {
 		Log = Log + "postContent:"+postContent + "\n";
 		buf.release();  
 
-		String res = "{data:JSON}";  
+		JSONObject js = new JSONObject();
+		js.put("status", "0");
+		js.put("message", "success");
+		js.put("data", "");
 		FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK,  
-				Unpooled.wrappedBuffer(res.getBytes("UTF-8")));  
+				Unpooled.wrappedBuffer(js.toString().getBytes("UTF-8")));  
 		response.headers().set(CONTENT_TYPE,Values.APPLICATION_JSON);  
 		response.headers().set(CONTENT_LENGTH, response.content().readableBytes());  
 		if (HttpHeaders.isKeepAlive(request)) {  
@@ -111,11 +137,14 @@ public class HttpServerInboundHandler extends ChannelInboundHandlerAdapter {
 	@Override  
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {  
 		System.out.println("ERR:"+cause.getMessage());  
-		String result = "{message:\""+cause.getMessage()+"\"}";
+		JSONObject js = new JSONObject();
+		js.put("status", "-1");
+		js.put("message", "fail");
+		js.put("data", "");
 		FullHttpResponse response;
 		try {
 			response = new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND,  
-					Unpooled.wrappedBuffer(result.getBytes("UTF-8")));
+					Unpooled.wrappedBuffer(js.toString().getBytes("UTF-8")));
 
 			response.headers().set(CONTENT_TYPE,Values.APPLICATION_JSON);  
 			response.headers().set(CONTENT_LENGTH, response.content().readableBytes());  
